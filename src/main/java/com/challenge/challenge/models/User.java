@@ -1,6 +1,8 @@
 package com.challenge.challenge.models;
 
 
+import com.challenge.challenge.dtos.UserDTO;
+import com.challenge.challenge.enums.Roles;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -25,9 +27,18 @@ public class User  implements Serializable {
     @Column(nullable = true)
     @Enumerated(EnumType.STRING)
     private Roles role;
-    @Column(nullable = true)
-    private String balance;
+    @Embedded
+    private UserBalance balance;
 
+
+    public User(UserDTO userDTO) {
+        this.fullName = userDTO.getFullName();
+        this.document = userDTO.getDocument();
+        this.email = userDTO.getEmail();
+        this.password = userDTO.getPassword();
+        this.role = userDTO.getRole();
+        this.balance = new UserBalance(userDTO.getBalance());
+    }
 
     public UUID getId() {
         return id;
@@ -69,19 +80,20 @@ public class User  implements Serializable {
         this.password = password;
     }
 
-    public String getRole() {
+    public Roles getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Roles role) {
         this.role = role;
     }
 
-    public String getBalance() {
+
+    public UserBalance getBalance() {
         return balance;
     }
 
-    public void setBalance(String balance) {
+    public void setBalance(UserBalance balance) {
         this.balance = balance;
     }
 }
