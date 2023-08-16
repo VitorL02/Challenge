@@ -62,19 +62,15 @@ public class UserService {
     private boolean permissionVerify(String payeeUUID) {
         Optional<User> userPayee = userRepository.findById(UUID.fromString(payeeUUID));
         if(userPayee.isPresent()){
-            if(userPayee.get().getRole().equals(Roles.USER)){
-                return true;
-            }
+            return userPayee.get().getRole().equals(Roles.USER);
         }
         return false;
     }
 
-    private boolean amoutVerify(String payeeUUID, double payment) {
-        Optional<User> userPayee = userRepository.findById(UUID.fromString(payeeUUID));
-        if(userPayee.isPresent()){
-            if(userPayee.get().getBalance().getBalance() < payment){
-                return true;
-            }
+    private boolean amoutVerify(String payerUUID, double payment) {
+        Optional<User> userPayer = userRepository.findById(UUID.fromString(payerUUID));
+        if(userPayer.isPresent()){
+            return userPayer.get().getBalance().getBalance() < payment;
         }
         return false;
     }
@@ -86,12 +82,15 @@ public class UserService {
             Optional<User> userPayer = userRepository.findById(UUID.fromString(transactionDTO.getPayer()));
             Optional<User> userPayee = userRepository.findById(UUID.fromString(transactionDTO.getPayee()));
             if(userPayer.isPresent() && userPayee.isPresent() ){
+
                 double newAmoutPayer = userPayer.get().getBalance().getBalance() - transactionDTO.getAmount();
                 double newAmoutPayee = userPayee.get().getBalance().getBalance() + transactionDTO.getAmount();
+
+
                 UserBalance userBalancePayer = new UserBalance(newAmoutPayer);
                 userPayer.get().setBalance(userBalancePayer);
                 UserBalance userBalancePayee = new UserBalance(newAmoutPayee);
-                userPayer.get().setBalance(userBalancePayee);
+                userPayee.get().setBalance(userBalancePayee);
 
                 userRepository.save(userPayer.get());
                 userRepository.save(userPayee.get());

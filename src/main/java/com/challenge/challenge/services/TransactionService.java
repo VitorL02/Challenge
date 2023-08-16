@@ -2,6 +2,7 @@ package com.challenge.challenge.services;
 
 
 import com.challenge.challenge.dtos.TransactionDTO;
+import com.challenge.challenge.models.Message;
 import com.challenge.challenge.models.Transaction;
 import com.challenge.challenge.models.TransactionsAudit;
 import com.challenge.challenge.repositories.TransactionAuditRepository;
@@ -20,27 +21,57 @@ public class TransactionService {
     @Autowired
     private TransactionAuditRepository transactionAuditRepository;
 
+    @Autowired
+    private AuthorizationService authorizationService;
+
     @Transactional
     public Transaction transactionSave(TransactionDTO transactionDTO){
         TransactionsAudit transactionsAudit = new TransactionsAudit();
         Transaction transaction = new Transaction();
-        transactionsAudit.setTransactionDate(new Date());
-        setDataTransaction(transactionDTO, transactionsAudit);
-        verifyPermissionsUser(transactionDTO, transactionsAudit);
-        verifyAmoutUser(transactionDTO, transactionsAudit);
-        transactionsAudit.setMenssageOperation(ConstantsChallenger.SUCESS_TRANSACTION_MENSSAGE);
+        try{
+            transactionsAudit.setTransactionDate(new Date());
+            setDataTransaction(transactionDTO, transactionsAudit);
+            Boolean amoutEnough = userService.userAmoutCheckTransaction(transactionDTO.getPayer(), transactionDTO.getAmount());
+            Boolean userPermission = userService.userPermissionTransaction(transactionDTO.getPayer());
 
-        userService.removeValueUserAcountAndAddUser(transactionDTO);
+            if(userPermission && !amoutEnough){
+                Message authorization = authorizationService.authorization();
+                realizeTransaction(transactionDTO, transactionsAudit,authorization);
+            }else{
+                verifyMessageErrorReturn(transactionsAudit,userPermission,amoutEnough);
+            }
+            transactionsAudit = transactionAuditRepository.save(transactionsAudit);
+            setTransactionData(transactionsAudit, transaction);
 
-        transactionsAudit = transactionAuditRepository.save(transactionsAudit);
-
-
-        transaction.setAmountTransaction(transactionsAudit.getAmount());
-        transaction.setMenssage(transactionsAudit.getMenssageOperation());
+        }catch (Exception e){
+            throw new RuntimeException("Erro ao completar transação");
+        }
 
         return transaction;
 
     }
+
+    private void verifyMessageErrorReturn(TransactionsAudit transactionsAudit, Boolean userPermission, Boolean amoutEnough) {
+        if(userPermission && amoutEnough){
+            transactionsAudit.setMenssageOperation(ConstantsChallenger.INSUFICCIENT_AMOUT);
+        } else if (!userPermission && amoutEnough ) {
+            transactionsAudit.setMenssageOperation(new StringBuilder().append(ConstantsChallenger.INSUFICCIENT_AMOUT).append(" e ").append(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION).toString());
+        } else if (!userPermission && !amoutEnough ) {
+            transactionsAudit.setMenssageOperation(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION);
+        }
+    }
+
+
+    @Transactional
+    private void realizeTransaction(TransactionDTO transactionDTO, TransactionsAudit transactionsAudit, Message authorization) {
+        if(authorization.getMessage().equalsIgnoreCase("Autorizado")){
+            transactionsAudit.setMenssageOperation(ConstantsChallenger.SUCESS_TRANSACTION_MENSSAGE);
+            userService.removeValueUserAcountAndAddUser(transactionDTO);
+        }else{
+            transactionsAudit.setMenssageOperation(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION);
+        }
+    }
+
 
     private static void setDataTransaction(TransactionDTO transactionDTO, TransactionsAudit transactionsAudit) {
         transactionsAudit.setAmount(transactionDTO.getAmount());
@@ -48,19 +79,11 @@ public class TransactionService {
         transactionsAudit.setPayer(transactionDTO.getPayer());
     }
 
-    private void verifyAmoutUser(TransactionDTO transactionDTO, TransactionsAudit transactionsAudit) {
-        Boolean amoutEnough = userService.userAmoutCheckTransaction(transactionDTO.getPayer(), transactionDTO.getAmount());
-        if(!amoutEnough){
-            transactionsAudit.setMenssageOperation(ConstantsChallenger.INSUFICCIENT_AMOUT);
-        }
-    }
 
-    private void verifyPermissionsUser(TransactionDTO transactionDTO, TransactionsAudit transactionsAudit) {
-        Boolean userPermission = userService.userPermissionTransaction(transactionDTO.getPayer());
-        if(!userPermission){
-            transactionsAudit.setMenssageOperation(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION);
-        }
-    }
 
+    private static void setTransactionData(TransactionsAudit transactionsAudit, Transaction transaction) {
+        transaction.setAmountTransaction(transactionsAudit.getAmount());
+        transaction.setMenssage(transactionsAudit.getMenssageOperation());
+    }
 
 }

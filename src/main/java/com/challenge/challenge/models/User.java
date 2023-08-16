@@ -40,6 +40,9 @@ public class User  implements Serializable {
         this.balance = new UserBalance(userDTO.getBalance());
     }
 
+    public User() {
+    }
+
     public UUID getId() {
         return id;
     }
