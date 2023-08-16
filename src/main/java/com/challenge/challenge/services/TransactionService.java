@@ -25,7 +25,7 @@ public class TransactionService {
     private AuthorizationService authorizationService;
 
     @Transactional
-    public Transaction transactionSave(TransactionDTO transactionDTO){
+    public Transaction transactionSave(TransactionDTO transactionDTO) throws Exception {
         TransactionsAudit transactionsAudit = new TransactionsAudit();
         Transaction transaction = new Transaction();
         try{
@@ -44,20 +44,26 @@ public class TransactionService {
             setTransactionData(transactionsAudit, transaction);
 
         }catch (Exception e){
-            throw new RuntimeException("Erro ao completar transação");
+            throw new Exception(e.getMessage());
         }
 
         return transaction;
 
     }
 
-    private void verifyMessageErrorReturn(TransactionsAudit transactionsAudit, Boolean userPermission, Boolean amoutEnough) {
+    private void verifyMessageErrorReturn(TransactionsAudit transactionsAudit, Boolean userPermission, Boolean amoutEnough) throws Exception {
         if(userPermission && amoutEnough){
             transactionsAudit.setMenssageOperation(ConstantsChallenger.INSUFICCIENT_AMOUT);
+            transactionAuditRepository.save(transactionsAudit);
+            throw new Exception(ConstantsChallenger.INSUFICCIENT_AMOUT);
         } else if (!userPermission && amoutEnough ) {
             transactionsAudit.setMenssageOperation(new StringBuilder().append(ConstantsChallenger.INSUFICCIENT_AMOUT).append(" e ").append(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION).toString());
+            transactionAuditRepository.save(transactionsAudit);
+            throw new Exception(new StringBuilder().append(ConstantsChallenger.INSUFICCIENT_AMOUT).append(" e ").append(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION).toString());
         } else if (!userPermission && !amoutEnough ) {
             transactionsAudit.setMenssageOperation(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION);
+            transactionAuditRepository.save(transactionsAudit);
+            throw new Exception(ConstantsChallenger.NOT_PERMISSON_REALIZE_TRANSACTION);
         }
     }
 

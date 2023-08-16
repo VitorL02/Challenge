@@ -19,7 +19,7 @@ public class TransactionController {
    private TransactionService transactionService;
 
     @PostMapping
-    public ResponseEntity transactionSave(@RequestBody @Valid TransactionDTO transactionDTO){
+    public ResponseEntity transactionSave(@RequestBody @Valid TransactionDTO transactionDTO) throws  Exception{
         var transaction = transactionService.transactionSave(transactionDTO);
         return  ResponseEntity.ok(transaction);
 

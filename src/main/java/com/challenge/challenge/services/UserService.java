@@ -11,6 +11,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,37 +24,37 @@ public class UserService {
 
 
     @Transactional
-    public User saveUser(UserDTO userDTO){
+    public User saveUser(UserDTO userDTO) throws Exception {
         User user = new User(userDTO);
         try{
             if(user != null){
                 userRepository.save(user);
             }
         }catch (Exception e){
-            throw new RuntimeException("Erro ao Cadastrar um usuario");
+            throw new Exception(e.getMessage());
         }
 
         return user;
     }
 
-   public Boolean userPermissionTransaction(String payeeUUID){
+   public Boolean userPermissionTransaction(String payeeUUID) throws Exception {
         if(payeeUUID != null ){
             try{
                 if (permissionVerify(payeeUUID)) return true;
             }catch (Exception e){
-                throw new RuntimeException("Erro ao recuperar usuario ");
+                throw new Exception("Erro ao recuperar usuario ");
             }
         }
 
         return false;
    }
 
-    public Boolean userAmoutCheckTransaction(String payeeUUID,double payment){
+    public Boolean userAmoutCheckTransaction(String payeeUUID,double payment) throws Exception {
         if(payeeUUID != null ){
             try{
                 if (amoutVerify(payeeUUID,payment)) return true;
             }catch (Exception e){
-                throw new RuntimeException("Erro ao recuperar usuario ");
+                throw new Exception("Erro ao recuperar usuario ");
             }
         }
 
@@ -96,7 +98,7 @@ public class UserService {
                 userRepository.save(userPayee.get());
 
             }else{
-                throw new RuntimeException("Erro ao encontrar usuario de recebimento ou usuario de pagamento");
+                throw new Exception("Erro ao encontrar usuario de recebimento ou usuario de pagamento");
             }
 
 
@@ -106,5 +108,17 @@ public class UserService {
         }
 
 
+    }
+
+    public List<User> findAllUsersRegistry() throws Exception {
+        List<User> allUsers = new ArrayList<>();
+        try {
+            allUsers  = userRepository.findAll();
+        }catch (Exception e){
+            throw new Exception("Erro ao encontrar lista de usuarios");
+        }
+
+
+        return allUsers;
     }
 }
